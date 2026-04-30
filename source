@@ -1,0 +1,195 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "AyWu Hub V2",
+   LoadingTitle = "Loading Interface...",
+   LoadingSubtitle = "by AyWu",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "AyWuESP",
+      FileName = "Config"
+   },
+   Discord = {
+      Enabled = false,
+      Invite = "",
+      RememberJoins = true
+   },
+})
+
+-- Global Variables
+_G.ESP_Enabled = false
+_G.Names_Enabled = false
+local SelectedPlayer = nil
+
+-- Function to create ESP for players
+local function CreateESP(player)
+    player.CharacterAdded:Connect(function(character)
+        local hrp = character:WaitForChild("HumanoidRootPart")
+        
+        -- Highlight ESP
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "AyWuHighlight"
+        highlight.Parent = character
+        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+        highlight.FillTransparency = 0.5
+        highlight.Enabled = _G.ESP_Enabled
+
+        -- Name Tag ESP
+        local bill = Instance.new("BillboardGui")
+        bill.Name = "AyWuName"
+        bill.AlwaysOnTop = true
+        bill.Size = UDim2.new(0, 100, 0, 50)
+        bill.Adornee = hrp
+        bill.StudsOffset = Vector3.new(0, 3, 0)
+        bill.Parent = character
+        bill.Enabled = _G.Names_Enabled
+
+        local label = Instance.new("TextLabel")
+        label.BackgroundTransparency = 1
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.Text = player.Name
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.TextSize = 14
+        label.Parent = bill
+    end)
+end
+
+-- Initialize for existing players
+for _, player in pairs(game.Players:GetPlayers()) do
+    if player ~= game.Players.LocalPlayer then
+        if player.Character then
+            task.spawn(function()
+                local character = player.Character
+                local highlight = Instance.new("Highlight", character)
+                highlight.Name = "AyWuHighlight"
+                highlight.Enabled = _G.ESP_Enabled
+                
+                local bill = Instance.new("BillboardGui")
+                bill.Name = "AyWuName"
+                bill.AlwaysOnTop = true
+                bill.Size = UDim2.new(0, 100, 0, 50)
+                bill.Adornee = character:WaitForChild("HumanoidRootPart")
+                bill.StudsOffset = Vector3.new(0, 3, 0)
+                bill.Parent = character
+                bill.Enabled = _G.Names_Enabled
+
+                local label = Instance.new("TextLabel")
+                label.BackgroundTransparency = 1
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.Text = player.Name
+                label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                label.Parent = bill
+            end)
+        end
+        CreateESP(player)
+    end
+end
+
+game.Players.PlayerAdded:Connect(function(player)
+    if player ~= game.Players.LocalPlayer then
+        CreateESP(player)
+    end
+end)
+
+-- Main Features Tab
+local MainTab = Window:CreateTab("Main Features", 4483362458)
+
+MainTab:CreateSection("Visuals")
+
+MainTab:CreateToggle({
+   Name = "Player ESP (Highlight)",
+   CurrentValue = false,
+   Flag = "ESP_Toggle",
+   Callback = function(Value)
+      _G.ESP_Enabled = Value
+      for _, p in pairs(game.Players:GetPlayers()) do
+          if p.Character and p.Character:FindFirstChild("AyWuHighlight") then
+              p.Character.AyWuHighlight.Enabled = Value
+          end
+      end
+   end,
+})
+
+MainTab:CreateToggle({
+   Name = "Show Names",
+   CurrentValue = false,
+   Flag = "Names_Toggle",
+   Callback = function(Value)
+      _G.Names_Enabled = Value
+      for _, p in pairs(game.Players:GetPlayers()) do
+          if p.Character and p.Character:FindFirstChild("AyWuName") then
+              p.Character.AyWuName.Enabled = Value
+          end
+      end
+   end,
+})
+
+-- Teleport Tab
+local TPTab = Window:CreateTab("Teleport", 4483362458)
+
+TPTab:CreateSection("Target Selection")
+
+local PlayerDropdown = TPTab:CreateDropdown({
+   Name = "Select Player",
+   Options = {"Refresh to load..."},
+   CurrentOption = "",
+   Flag = "PlayerDropdown",
+   Callback = function(Option)
+      SelectedPlayer = Option
+   end,
+})
+
+TPTab:CreateButton({
+   Name = "Refresh Player List",
+   Callback = function()
+      local playerList = {}
+      for _, v in pairs(game.Players:GetPlayers()) do
+          if v ~= game.Players.LocalPlayer then
+              table.insert(playerList, v.Name)
+          end
+      end
+      PlayerDropdown:Refresh(playerList, true)
+   end,
+})
+
+TPTab:CreateButton({
+   Name = "Teleport to Player",
+   Callback = function()
+      if SelectedPlayer and SelectedPlayer ~= "" then
+          local target = game.Players:FindFirstChild(SelectedPlayer)
+          local myChar = game.Players.LocalPlayer.Character
+          
+          if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myChar then
+              -- Safely teleport slightly above the target to avoid floor glitches
+              myChar.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
+              
+              Rayfield:Notify({
+                 Title = "Success",
+                 Content = "Teleported to " .. SelectedPlayer,
+                 Duration = 2,
+              })
+          else
+              Rayfield:Notify({
+                 Title = "Error",
+                 Content = "Player character not found or not loaded.",
+                 Duration = 3,
+              })
+          end
+      else
+          Rayfield:Notify({
+             Title = "Warning",
+             Content = "Please select a player first!",
+             Duration = 3,
+          })
+      end
+   end,
+})
+
+-- Notification
+Rayfield:Notify({
+   Title = "Hub Loaded!",
+   Content = "AyWu Hub V2 is ready.",
+   Duration = 5,
+   Image = 4483362458,
+})
