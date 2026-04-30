@@ -19,14 +19,16 @@ local Window = Rayfield:CreateWindow({
 -- Global Variables
 _G.ESP_Enabled = false
 _G.Names_Enabled = false
-local SelectedPlayer = nil
+_G.AutoClick = false
+_G.AutoE = false
+_G.AutoR = false
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 -- Function to create ESP for players
 local function CreateESP(player)
     player.CharacterAdded:Connect(function(character)
         local hrp = character:WaitForChild("HumanoidRootPart")
         
-        -- Highlight ESP
         local highlight = Instance.new("Highlight")
         highlight.Name = "AyWuHighlight"
         highlight.Parent = character
@@ -35,7 +37,6 @@ local function CreateESP(player)
         highlight.FillTransparency = 0.5
         highlight.Enabled = _G.ESP_Enabled
 
-        -- Name Tag ESP
         local bill = Instance.new("BillboardGui")
         bill.Name = "AyWuName"
         bill.AlwaysOnTop = true
@@ -92,7 +93,7 @@ game.Players.PlayerAdded:Connect(function(player)
     end
 end)
 
--- Main Features Tab
+-- --- MAIN FEATURES TAB ---
 local MainTab = Window:CreateTab("Main Features", 4483362458)
 
 MainTab:CreateSection("Visuals")
@@ -125,68 +126,67 @@ MainTab:CreateToggle({
    end,
 })
 
--- Teleport Tab
-local TPTab = Window:CreateTab("Teleport", 4483362458)
+-- --- AUTO TAB ---
+local AutoTab = Window:CreateTab("Auto Tasks", 4483362458)
 
-TPTab:CreateSection("Target Selection")
+AutoTab:CreateSection("Automation")
 
-local PlayerDropdown = TPTab:CreateDropdown({
-   Name = "Select Player",
-   Options = {"Refresh to load..."},
-   CurrentOption = "",
-   Flag = "PlayerDropdown",
-   Callback = function(Option)
-      SelectedPlayer = Option
-   end,
-})
-
-TPTab:CreateButton({
-   Name = "Refresh Player List",
-   Callback = function()
-      local playerList = {}
-      for _, v in pairs(game.Players:GetPlayers()) do
-          if v ~= game.Players.LocalPlayer then
-              table.insert(playerList, v.Name)
-          end
-      end
-      PlayerDropdown:Refresh(playerList, true)
-   end,
-})
-
-TPTab:CreateButton({
-   Name = "Teleport to Player",
-   Callback = function()
-      if SelectedPlayer and SelectedPlayer ~= "" then
-          local target = game.Players:FindFirstChild(SelectedPlayer)
-          local myChar = game.Players.LocalPlayer.Character
-          
-          if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myChar then
-              -- Safely teleport slightly above the target to avoid floor glitches
-              myChar.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
-              
-              Rayfield:Notify({
-                 Title = "Success",
-                 Content = "Teleported to " .. SelectedPlayer,
-                 Duration = 2,
-              })
-          else
-              Rayfield:Notify({
-                 Title = "Error",
-                 Content = "Player character not found or not loaded.",
-                 Duration = 3,
-              })
-          end
-      else
-          Rayfield:Notify({
-             Title = "Warning",
-             Content = "Please select a player first!",
-             Duration = 3,
-          })
+AutoTab:CreateToggle({
+   Name = "Auto Left Click",
+   CurrentValue = false,
+   Flag = "AutoClick",
+   Callback = function(Value)
+      _G.AutoClick = Value
+      if Value then
+          task.spawn(function()
+              while _G.AutoClick do
+                  VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                  VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                  task.wait(0.1)
+              end
+          end)
       end
    end,
 })
 
--- Notification
+AutoTab:CreateToggle({
+   Name = "Auto Press E",
+   CurrentValue = false,
+   Flag = "AutoE",
+   Callback = function(Value)
+      _G.AutoE = Value
+      if Value then
+          task.spawn(function()
+              while _G.AutoE do
+                  VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                  task.wait(0.1)
+                  VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                  task.wait(0.1)
+              end
+          end)
+      end
+   end,
+})
+
+AutoTab:CreateToggle({
+   Name = "Auto Press R",
+   CurrentValue = false,
+   Flag = "AutoR",
+   Callback = function(Value)
+      _G.AutoR = Value
+      if Value then
+          task.spawn(function()
+              while _G.AutoR do
+                  VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.R, false, game)
+                  task.wait(0.1)
+                  VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.R, false, game)
+                  task.wait(0.1)
+              end
+          end)
+      end
+   end,
+})
+
 Rayfield:Notify({
    Title = "Hub Loaded!",
    Content = "AyWu Hub V2 is ready.",
