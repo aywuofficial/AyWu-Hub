@@ -1,0 +1,75 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Fast Gift Holder",
+   LoadingTitle = "Loading Script...",
+   LoadingSubtitle = "by AyWu",
+   Theme = "Default", 
+   DisableRayfieldPrompts = false,
+   DisableBuildWarnings = false,
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "FastGiftHolderConfig",
+      FileName = "Config"
+   }
+})
+
+-- Create a new Tab
+local MainTab = Window:CreateTab("Features", 4483362458)
+
+-- STATE VARIABLES
+local reduceHoldEnabled = false
+local originalDurations = {} -- Stores original duration to restore later
+
+-- HOLD DURATION HANDLER
+local function updatePromptDuration(prompt)
+    if prompt:IsA("ProximityPrompt") then
+        if reduceHoldEnabled then
+            -- Save the original duration if not already saved
+            if not originalDurations[prompt] then
+                originalDurations[prompt] = prompt.HoldDuration
+            end
+            -- If original duration is 3.5 (or close to it), change to 0.5
+            if math.abs(prompt.HoldDuration - 3.5) < 0.1 or prompt.HoldDuration == 3.5 then
+                prompt.HoldDuration = 0.5
+            end
+        else
+            -- Restore original duration when turned off
+            if originalDurations[prompt] then
+                prompt.HoldDuration = originalDurations[prompt]
+            end
+        end
+    end
+end
+
+-- Monitor new Prompts that spawn into the game
+game.DescendantAdded:Connect(function(descendant)
+    if reduceHoldEnabled then
+        task.wait(0.5) -- Small delay to ensure the prompt is fully loaded
+        updatePromptDuration(descendant)
+    end
+end)
+
+-- TOGGLE: REDUCE HOLD DURATION
+local Toggle1 = MainTab:CreateToggle({
+   Name = "Reduce Hold Duration (3.5s -> 0.5s)",
+   CurrentValue = false,
+   Flag = "ToggleHoldDuration",
+   Callback = function(Value)
+      reduceHoldEnabled = Value
+      
+      -- Apply to all existing Prompts in the game
+      for _, v in pairs(game:GetDescendants()) do
+          updatePromptDuration(v)
+      end
+      
+      if reduceHoldEnabled then
+          Rayfield:Notify({Title = "Notification", Content = "Reduced hold duration enabled!", Duration = 3})
+      else
+          Rayfield:Notify({Title = "Notification", Content = "Original durations restored!", Duration = 3})
+      end
+   end,
+})
+
+-- Notification when script is ready
+Rayfield:Notify({Title = "Success", Content = "Script is ready to use!", Duration = 5})
